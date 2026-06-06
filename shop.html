@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nihao Asia Shop — Sortiment</title>
+<!--
+  ============================================================================
+  NIHAO ASIA SHOP — SHOP-SEITE  (Version 2)
+  ============================================================================
+  Neu gegenüber V1:
+   1) ECHTE BILDER pro Produkt (Feld "img"). Fehlt das Bild -> Emoji als Notnagel.
+   2) Funktioniert als eigene Seite auf eurer Webseite: speichere sie als
+      "shop.html" im GitHub-Repo. Verlinke von index.html mit  shop.html?cat=frische
+      -> öffnet direkt die richtige Kategorie.
+   3) Warenkorb bleibt beim Neuladen erhalten (localStorage, mit Schutz).
+   4) Shopify-Stelle aktualisiert (API 2026-04). Suche im Code:  // >>> SHOPIFY
+
+  Immer noch 100% OFFLINE testbar: Doppelklick -> Browser. Kein Internet nötig.
+  Daten unten sind Testdaten. Es wird KEINE echte Bestellung ausgelöst.
+  ============================================================================
+-->
+<style>
+  :root{
+    --paper:#fbf6ee; --paper-2:#f3e9da;
+    --ink:#241b16; --ink-soft:#6f615a;
+    --red:#b3261e; --red-dark:#8c1c16; --gold:#c79a3a;
+    --line:#e6d8c6; --ok:#2e7d4f;
+    --shadow:0 10px 30px -12px rgba(60,30,15,.35); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{
+    font-family:"Iowan Old Style","Palatino Linotype","Palatino",Georgia,"Songti SC",serif;
+    background:radial-gradient(1200px 600px at 80% -10%, var(--paper-2), transparent 60%), var(--paper);
+    color:var(--ink); -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  .testbar{
+    background:repeating-linear-gradient(45deg,#f4c542,#f4c542 12px,#e9b528 12px,#e9b528 24px);
+    color:#3a2b00;font-weight:700;text-align:center;padding:.55rem 1rem;font-size:.86rem;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;border-bottom:1px solid #c99a10;
+  }
+  header{position:sticky;top:0;z-index:40;background:rgba(251,246,238,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;gap:1rem}
+  .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}
+  .brand .mark{width:46px;height:46px;border-radius:13px;background:var(--red);color:#fff;display:grid;place-items:center;
+               font-weight:800;font-size:1.5rem;box-shadow:var(--shadow);font-family:system-ui,sans-serif;overflow:hidden}
+  .brand .mark img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:13px}
+  .brand b{font-size:1.35rem;letter-spacing:.01em;display:block;line-height:1.1}
+  .brand span{font-size:.74rem;color:var(--ink-soft);font-family:system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+  .cartbtn{position:relative;border:1px solid var(--line);background:#fff;border-radius:999px;padding:.6rem 1.1rem;cursor:pointer;
+           font-weight:700;font-family:system-ui,sans-serif;display:flex;align-items:center;gap:.5rem;box-shadow:var(--shadow);
+           transition:transform .12s ease,border-color .12s}
+  .cartbtn:hover{transform:translateY(-1px);border-color:var(--red)}
+  .badge{background:var(--red);color:#fff;border-radius:999px;min-width:22px;height:22px;display:inline-grid;place-items:center;
+         font-size:.74rem;padding:0 6px;transform:scale(0);transition:transform .18s cubic-bezier(.2,1.4,.4,1)}
+  .badge.show{transform:scale(1)}
+  .hero{max-width:1100px;margin:0 auto;padding:1.8rem 1.1rem .4rem}
+  .back{display:inline-block;font-family:system-ui,sans-serif;font-size:.85rem;color:var(--ink-soft);text-decoration:none;margin-bottom:.6rem}
+  .back:hover{color:var(--red)}
+  .hero h1{font-size:clamp(1.8rem,4vw,2.7rem);margin:0 0 .3rem;letter-spacing:-.01em}
+  .hero p{color:var(--ink-soft);margin:.2rem 0 0;max-width:60ch}
+  .hero .hint{font-family:system-ui,sans-serif;font-size:.8rem;color:var(--ink-soft);margin-top:.8rem}
+  .cats{position:sticky;top:73px;z-index:30;background:rgba(251,246,238,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .cats-inner{max-width:1100px;margin:0 auto;display:flex;gap:.5rem;overflow-x:auto;padding:.7rem 1.1rem;scrollbar-width:thin}
+  .cat{white-space:nowrap;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:.45rem .95rem;
+       cursor:pointer;font-weight:600;font-family:system-ui,sans-serif;font-size:.86rem;transition:all .12s ease;flex:0 0 auto}
+  .cat:hover{border-color:var(--red)}
+  .cat.active{background:var(--red);border-color:var(--red);color:#fff;box-shadow:var(--shadow)}
+  main{max-width:1100px;margin:0 auto;padding:1.4rem 1.1rem 5rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.1rem}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;
+        transition:transform .14s ease,box-shadow .14s ease}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .thumb{position:relative;height:140px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,var(--paper-2),#fff)}
+  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .thumb .emoji{font-size:3.4rem}
+  .card .body{padding:.9rem 1rem 1rem;display:flex;flex-direction:column;gap:.25rem;flex:1}
+  .card h3{margin:0;font-size:1.02rem;line-height:1.25}
+  .card .unit{font-family:system-ui,sans-serif;font-size:.76rem;color:var(--ink-soft)}
+  .card .row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding-top:.55rem}
+  .price{font-weight:800;font-size:1.06rem}
+  .add{border:none;background:var(--red);color:#fff;border-radius:10px;padding:.5rem .8rem;cursor:pointer;font-weight:700;
+       font-family:system-ui,sans-serif;font-size:.85rem;transition:background .12s,transform .1s}
+  .add:hover{background:var(--red-dark)} .add:active{transform:scale(.96)}
+  .stepper{display:flex;align-items:center;gap:.4rem;font-family:system-ui,sans-serif}
+  .stepper button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;
+                  font-weight:800;font-size:1rem;line-height:1;color:var(--red)}
+  .stepper button:hover{border-color:var(--red)} .stepper .q{min-width:22px;text-align:center;font-weight:700}
+  .overlay{position:fixed;inset:0;background:rgba(36,27,22,.45);opacity:0;visibility:hidden;transition:opacity .2s;z-index:50}
+  .overlay.open{opacity:1;visibility:visible}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,100%);background:var(--paper);
+          box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);transform:translateX(100%);
+          transition:transform .26s cubic-bezier(.2,.8,.2,1);z-index:60;display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .dhead{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.2rem;border-bottom:1px solid var(--line)}
+  .dhead h2{margin:0;font-size:1.25rem}
+  .x{border:none;background:transparent;font-size:1.6rem;cursor:pointer;color:var(--ink-soft);line-height:1}
+  .ditems{flex:1;overflow:auto;padding:.6rem 1.2rem}
+  .empty{color:var(--ink-soft);text-align:center;padding:3rem 1rem;font-family:system-ui,sans-serif}
+  .citem{display:flex;gap:.8rem;padding:.8rem 0;border-bottom:1px solid var(--line)}
+  .citem .ic{position:relative;width:48px;height:48px;border-radius:10px;background:var(--paper-2);display:grid;place-items:center;
+             font-size:1.6rem;flex:0 0 auto;overflow:hidden}
+  .citem .ic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .citem .meta{flex:1;min-width:0} .citem .meta b{display:block;font-size:.96rem}
+  .citem .meta small{font-family:system-ui,sans-serif;color:var(--ink-soft)}
+  .citem .line{display:flex;align-items:center;justify-content:space-between;margin-top:.35rem}
+  .dfoot{border-top:1px solid var(--line);padding:1rem 1.2rem 1.3rem;background:#fff;font-family:system-ui,sans-serif}
+  .fulfil{display:flex;gap:.5rem;margin-bottom:.9rem}
+  .fulfil button{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:.6rem;cursor:pointer;font-weight:600;font-size:.85rem}
+  .fulfil button.on{background:var(--red);color:#fff;border-color:var(--red)}
+  .sum{display:flex;justify-content:space-between;margin:.3rem 0;font-size:.92rem}
+  .sum.total{font-size:1.18rem;font-weight:800;margin-top:.6rem;font-family:"Iowan Old Style",Georgia,serif}
+  .vat{font-size:.74rem;color:var(--ink-soft)}
+  .checkout{width:100%;margin-top:.9rem;border:none;background:var(--red);color:#fff;border-radius:12px;padding:.95rem;
+            font-weight:800;font-size:1rem;cursor:pointer;transition:background .12s}
+  .checkout:hover:not(:disabled){background:var(--red-dark)} .checkout:disabled{opacity:.45;cursor:not-allowed}
+  .modal-wrap{position:fixed;inset:0;display:grid;place-items:center;background:rgba(36,27,22,.55);opacity:0;visibility:hidden;
+              transition:opacity .2s;z-index:70;padding:1rem}
+  .modal-wrap.open{opacity:1;visibility:visible}
+  .modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;padding:1.6rem;box-shadow:var(--shadow);font-family:system-ui,sans-serif}
+  .modal h2{font-family:"Iowan Old Style",Georgia,serif;margin:.2rem 0 .4rem} .modal .ok{color:var(--ok);font-weight:700}
+  .modal pre{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.9rem;font-size:.8rem;overflow:auto;max-height:240px}
+  .modal .close{margin-top:1rem;width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:.8rem;cursor:pointer;font-weight:700}
+  footer{max-width:1100px;margin:0 auto;padding:1.5rem 1.1rem 3rem;color:var(--ink-soft);font-family:system-ui,sans-serif;font-size:.8rem;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<div class="testbar">🔌 OFFLINE-TESTMODUS · Testdaten · Es wird KEINE echte Bestellung ausgelöst</div>
+
+<header>
+  <div class="bar">
+    <!-- Logo: lädt logo.png; wenn nicht vorhanden (z.B. offline) -> rotes "你" -->
+    <a class="brand" href="index.html">
+      <span class="mark"><img src="logo.png" alt="Nihao Logo" onerror="this.replaceWith(document.createTextNode('你'))"></span>
+      <span><b>Nihao Asia Shop</b><span>Zürich Oerlikon</span></span>
+    </a>
+    <button class="cartbtn" id="openCart">🛒 Warenkorb <span class="badge" id="badge">0</span></button>
+  </div>
+</header>
+
+<section class="hero">
+  <a class="back" href="index.html">← Zurück zur Startseite</a>
+  <h1>Unser Sortiment</h1>
+  <p>Authentische asiatische Produkte – frisch, tiefgekühlt und haltbar. Wählen Sie eine Kategorie und legen Sie Ihre Artikel in den Warenkorb.</p>
+  <p class="hint">Bilder dienen der Veranschaulichung · Verfügbarkeit im Laden variiert</p>
+</section>
+
+<nav class="cats"><div class="cats-inner" id="cats"></div></nav>
+<main><div class="grid" id="grid"></div></main>
+
+<footer>
+  © 2025 nihao-asiashop.ch · Hofwiesenstrasse 350, 8050 Zürich · Mo–Sa 9:00–19:00<br>
+  Testseite – keine Zahlungen, keine Datenübertragung.
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Warenkorb">
+  <div class="dhead"><h2>Warenkorb</h2><button class="x" id="closeCart">×</button></div>
+  <div class="ditems" id="ditems"></div>
+  <div class="dfoot">
+    <div class="fulfil" id="fulfil">
+      <button data-f="pickup" class="on">🏬 Abholung im Laden</button>
+      <button data-f="delivery">🚲 Lieferung Zürich</button>
+    </div>
+    <div class="sum"><span>Zwischensumme</span><span id="subtotal">CHF 0.00</span></div>
+    <div class="sum" id="feeRow" style="display:none"><span>Lieferung</span><span id="fee">CHF 5.00</span></div>
+    <div class="sum total"><span>Total</span><span id="total">CHF 0.00</span></div>
+    <div class="vat">inkl. 2.6% MwSt (Lebensmittel CH) · MwSt: <span id="vat">CHF 0.00</span></div>
+    <button class="checkout" id="checkout" disabled>Zur Kasse</button>
+  </div>
+</aside>
+
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal">
+    <div class="ok">✓ Test erfolgreich</div>
+    <h2>Bestellübersicht (Test)</h2>
+    <p>Im Live-Betrieb würde hier die Shopify-Kasse geöffnet. Das ist die Bestellung, die übergeben würde:</p>
+    <pre id="orderJson"></pre>
+    <button class="close" id="closeModal">Schliessen</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================== CONFIG */
+const CONFIG = { currency:"CHF", vatRate:0.026, deliveryFee:5.00, freeDeliveryFrom:60.00 };
+const money = new Intl.NumberFormat("de-CH",{style:"currency",currency:CONFIG.currency});
+
+/* =========================================================================== KATEGORIEN ("Menü")
+   Die "id" (frische, convenience, ...) ist wichtig: damit verlinkst du von
+   index.html, z.B.  <a href="shop.html?cat=tee">  öffnet direkt die Tee-Kategorie. */
+const CATEGORIES = [
+  {id:"alle",        label:"Alle",             emoji:"✨"},
+  {id:"frische",     label:"Frische Produkte", emoji:"🥬"},
+  {id:"convenience", label:"Convenience Food", emoji:"🥟"},
+  {id:"snacks",      label:"Snacks + Süsses",  emoji:"🍘"},
+  {id:"getraenke",   label:"Getränke",         emoji:"🥤"},
+  {id:"gewuerze",    label:"Gewürze",          emoji:"🥢"},
+  {id:"ramen",       label:"Ramen",            emoji:"🍜"},
+  {id:"trocken",     label:"Trockenzutaten",   emoji:"🌾"},
+  {id:"tee",         label:"Tee",              emoji:"🍵"},
+  {id:"nonfood",     label:"Nonfood",          emoji:"🫖"}
+];
+
+/* ===========================================================================
+   >>> SHOPIFY · DATA LAYER · HIER SPÄTER UMSTELLEN
+   ---------------------------------------------------------------------------
+   Reihenfolge der Felder:  id, name, category, price, unit, emoji, img
+                                                                       ^^^^
+   "img" = Bildpfad. Drei Möglichkeiten:
+     a) leer ""                       -> es wird das Emoji angezeigt
+     b) lokaler Ordner "produkte/xy.jpg"   (Bilder neben dieser Datei ablegen)
+     c) Cloudinary-URL "https://res.cloudinary.com/.../xy.jpg"  (für die Live-Seite)
+   Wenn ein Bild fehlt/fehlerhaft ist, fällt es automatisch aufs Emoji zurück.
+   --> Die ersten drei Produkte zeigen Variante (b) als Beispiel.
+   =========================================================================== */
+const MOCK_PRODUCTS = [
+  ["t01","Seidentofu","frische",2.90,"300 g","🧈","produkte/seidentofu.jpg"],
+  ["t02","Pak Choi","frische",3.20,"Bund","🥬",""],
+  ["t03","Frische Shiitake","frische",4.50,"200 g","🍄",""],
+  ["t04","Thai Mango","frische",3.90,"Stück","🥭",""],
+  ["t05","Enoki Pilze","frische",2.80,"150 g","🍄",""],
+
+  ["t06","Gemüse Gyoza","convenience",8.90,"600 g","🥟",""],
+  ["t07","Dim Sum Mix","convenience",12.50,"500 g","🥠",""],
+  ["t08","Black Tiger Crevetten","convenience",16.90,"500 g","🦐",""],
+  ["t09","Mochi Glace","convenience",7.50,"6 Stück","🍡",""],
+  ["t10","Frühlingsrollen","convenience",6.90,"10 Stück","🌯",""],
+
+  ["t11","Rice Crackers","snacks",3.50,"150 g","🍘",""],
+  ["t12","Seaweed Snack","snacks",4.20,"5er","🌊",""],
+  ["t13","Pocky Matcha","snacks",2.80,"Packung","🍫",""],
+  ["t14","Glückskekse","snacks",4.90,"12 Stück","🥠",""],
+  ["t15","Crevetten Chips","snacks",3.20,"100 g","🍤",""],
+
+  ["t16","Ramune Original","getraenke",2.50,"200 ml","🥤",""],
+  ["t17","Asahi Bier","getraenke",2.90,"330 ml","🍺",""],
+  ["t18","Sake","getraenke",14.90,"300 ml","🍶",""],
+  ["t19","Kokoswasser","getraenke",3.90,"1 L","🥥",""],
+  ["t20","Aloe Vera Drink","getraenke",3.50,"1.5 L","🧃",""],
+
+  ["t21","Kikkoman Sojasauce","gewuerze",6.90,"500 ml","🍶","produkte/sojasauce.jpg"],
+  ["t22","Gochujang","gewuerze",7.50,"500 g","🌶️",""],
+  ["t23","Sesamöl","gewuerze",8.90,"250 ml","🫗",""],
+  ["t24","Miso Paste","gewuerze",6.50,"500 g","🥣",""],
+  ["t25","Reisessig","gewuerze",4.20,"500 ml","🍶",""],
+
+  ["t26","Shin Ramyun","ramen",6.90,"5er Pack","🍜",""],
+  ["t27","Nissin Cup Noodle","ramen",2.20,"Becher","🍲",""],
+  ["t28","Konjac Nudeln","ramen",3.20,"200 g","🍜",""],
+  ["t29","Udon frisch","ramen",2.90,"200 g","🍜",""],
+
+  ["t30","Jasminreis","trocken",14.90,"5 kg","🍚",""],
+  ["t31","Reispapier","trocken",3.50,"22 cm","📄",""],
+  ["t32","Goji Beeren","trocken",6.90,"250 g","🔴",""],
+  ["t33","Getr. Shiitake","trocken",8.90,"100 g","🍄",""],
+  ["t34","Klebreis","trocken",4.50,"1 kg","🍚",""],
+
+  ["t35","Jasmintee","tee",5.90,"100 g","🍵",""],
+  ["t36","Matcha Pulver","tee",18.90,"100 g","🍵","produkte/matcha.jpg"],
+  ["t37","Oolong Tee","tee",7.50,"100 g","🍵",""],
+  ["t38","Hojicha","tee",8.90,"100 g","🍵",""],
+  ["t39","Genmaicha","tee",6.50,"100 g","🍵",""],
+
+  ["t40","Bambus Essstäbchen","nonfood",4.90,"5 Paar","🥢",""],
+  ["t41","Gusseisen Teekanne","nonfood",39.00,"Stück","🫖",""],
+  ["t42","Keramik Reisschale","nonfood",6.90,"Stück","🍚",""],
+  ["t43","Bambusdämpfer","nonfood",14.90,"20 cm","🎍",""]
+].map(([id,name,category,price,unit,emoji,img])=>({id,name,category,price,unit,emoji,img}));
+
+async function getProducts(){
+  // ---- OFFLINE (jetzt) ----
+  return MOCK_PRODUCTS;
+
+  /* ---- LIVE via Shopify Storefront API (später) ----------------------------
+     Token erstellen: Shopify-Admin -> Settings -> Apps and sales channels ->
+     Develop apps -> App erstellen -> Storefront API aktivieren -> Token kopieren.
+     Der "Storefront access token" ist öffentlich, darf im Browser stehen.
+     API-Version 2026-04 ist aktuell stabil (Stand jetzt).
+
+  const SHOP  = "DEIN-SHOP.myshopify.com";
+  const TOKEN = "DEIN_STOREFRONT_TOKEN";
+  const query = `{
+    products(first: 100) {
+      edges { node {
+        title
+        featuredImage { url }
+        collections(first:1){ edges{ node{ handle } } }
+        variants(first:1){ edges{ node{ id price{ amount } } } }
+      } }
+    }
+  }`;
+  const res = await fetch(`https://${SHOP}/api/2026-04/graphql.json`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json",
+              "X-Shopify-Storefront-Access-Token": TOKEN },
+    body: JSON.stringify({ query })
+  });
+  const json = await res.json();
+  return json.data.products.edges.map(({node})=>({
+    id:       node.variants.edges[0].node.id,           // Variant-GID (für Checkout)
+    name:     node.title,
+    price:    parseFloat(node.variants.edges[0].node.price.amount),
+    category: node.collections.edges[0]?.node.handle || "alle",
+    unit:     "",
+    emoji:    "🛍️",
+    img:      node.featuredImage?.url || ""             // Bild kommt automatisch von Shopify!
+  }));
+  --------------------------------------------------------------------------- */
+}
+
+/* =========================================================================== STATE */
+let products = [];
+let activeCat = "alle";
+let fulfillment = "pickup";
+const cart = {};                          // { productId: quantity }
+const STORE_KEY = "nihao_cart_v1";
+
+/* localStorage mit Schutz: hält den Korb beim Neuladen. Fällt bei Bedarf
+   stillschweigend auf "nur im Speicher" zurück (z.B. in Vorschau-Umgebungen). */
+function saveCart(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(cart)); }catch(e){} }
+function loadCart(){ try{ const s=localStorage.getItem(STORE_KEY); if(s) Object.assign(cart, JSON.parse(s)); }catch(e){} }
+
+/* =========================================================================== RENDERING */
+const $ = s => document.querySelector(s);
+const gridEl = $("#grid"), catsEl = $("#cats"), ditemsEl = $("#ditems");
+
+function thumb(p){
+  const img = p.img ? `<img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.remove()">` : "";
+  return `${img}<span class="emoji">${p.emoji||"🛍️"}</span>`;
+}
+function renderCats(){
+  catsEl.innerHTML = CATEGORIES.map(c =>
+    `<button class="cat ${c.id===activeCat?"active":""}" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join("");
+}
+function renderGrid(){
+  const list = activeCat==="alle" ? products : products.filter(p=>p.category===activeCat);
+  if(!list.length){ gridEl.innerHTML = `<p style="color:var(--ink-soft)">Keine Produkte in dieser Kategorie.</p>`; return; }
+  gridEl.innerHTML = list.map(p=>{
+    const q = cart[p.id]||0;
+    const control = q>0
+      ? `<div class="stepper"><button data-dec="${p.id}">−</button><span class="q">${q}</span><button data-inc="${p.id}">+</button></div>`
+      : `<button class="add" data-add="${p.id}">+ In den Korb</button>`;
+    return `<article class="card">
+      <div class="thumb">${thumb(p)}</div>
+      <div class="body"><h3>${p.name}</h3><div class="unit">${p.unit||""}</div>
+        <div class="row"><span class="price">${money.format(p.price)}</span>${control}</div></div>
+    </article>`;
+  }).join("");
+}
+function renderCart(){
+  const ids = Object.keys(cart).filter(id=>cart[id]>0);
+  ditemsEl.innerHTML = !ids.length
+    ? `<div class="empty">Ihr Warenkorb ist leer.<br>Stöbern Sie im Sortiment 🥢</div>`
+    : ids.map(id=>{
+        const p = products.find(x=>x.id===id); if(!p) return "";
+        return `<div class="citem"><div class="ic">${thumb(p)}</div>
+          <div class="meta"><b>${p.name}</b><small>${p.unit||""} · ${money.format(p.price)}</small>
+            <div class="line"><div class="stepper"><button data-dec="${id}">−</button>
+              <span class="q">${cart[id]}</span><button data-inc="${id}">+</button></div>
+              <strong>${money.format(p.price*cart[id])}</strong></div></div></div>`;
+      }).join("");
+  updateTotals();
+}
+function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function subtotal(){ return Object.entries(cart).reduce((s,[id,q])=>{ const p=products.find(x=>x.id===id); return s+(p?p.price*q:0); },0); }
+function updateBadge(){ const n=cartCount(),b=$("#badge"); b.textContent=n; b.classList.toggle("show",n>0); }
+function updateTotals(){
+  const sub=subtotal(); let fee=0; const isDelivery=fulfillment==="delivery";
+  if(isDelivery && sub>0 && sub<CONFIG.freeDeliveryFrom) fee=CONFIG.deliveryFee;
+  $("#feeRow").style.display=isDelivery?"flex":"none"; $("#fee").textContent=money.format(fee);
+  const total=sub+fee, vat=total-total/(1+CONFIG.vatRate);
+  $("#subtotal").textContent=money.format(sub); $("#total").textContent=money.format(total); $("#vat").textContent=money.format(vat);
+  $("#checkout").disabled=sub<=0; updateBadge();
+}
+
+/* =========================================================================== AKTIONEN */
+function addToCart(id){ cart[id]=(cart[id]||0)+1; saveCart(); renderGrid(); renderCart(); }
+function changeQty(id,d){ cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; saveCart(); renderGrid(); renderCart(); }
+function openCart(){ $("#overlay").classList.add("open"); $("#drawer").classList.add("open"); }
+function closeCart(){ $("#overlay").classList.remove("open"); $("#drawer").classList.remove("open"); }
+
+function checkout(){
+  const order = {
+    fulfillment,
+    items: Object.entries(cart).map(([id,q])=>{ const p=products.find(x=>x.id===id);
+      return { id, name:p.name, qty:q, price:p.price, line:+(p.price*q).toFixed(2) }; }),
+    subtotal:+subtotal().toFixed(2)
+  };
+  // ---- OFFLINE (jetzt): nur Übersicht zeigen ----
+  $("#orderJson").textContent = JSON.stringify(order,null,2);
+  $("#modalWrap").classList.add("open");
+
+  /* ---- LIVE (später): Storefront API – Korb erstellen und zur Kasse leiten ----
+     const lines = Object.entries(cart).map(([variantId,q]) => ({ merchandiseId:variantId, quantity:q }));
+     const mutation = `mutation($lines:[CartLineInput!]!){ cartCreate(input:{lines:$lines}){ cart{ checkoutUrl } } }`;
+     const res = await fetch(`https://DEIN-SHOP.myshopify.com/api/2026-04/graphql.json`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "X-Shopify-Storefront-Access-Token":"DEIN_TOKEN" },
+        body: JSON.stringify({ query:mutation, variables:{ lines } }) });
+     const { data } = await res.json();
+     localStorage.removeItem("nihao_cart_v1");           // Korb leeren
+     window.location = data.cartCreate.cart.checkoutUrl; // -> Shopify-Kasse
+     --------------------------------------------------------------------------- */
+}
+
+/* =========================================================================== EVENTS */
+document.addEventListener("click",(e)=>{
+  const t=e.target;
+  if(t.dataset.add) addToCart(t.dataset.add);
+  if(t.dataset.inc) changeQty(t.dataset.inc,+1);
+  if(t.dataset.dec) changeQty(t.dataset.dec,-1);
+  if(t.dataset.cat){ activeCat=t.dataset.cat; renderCats(); renderGrid(); }
+  if(t.dataset.f){ fulfillment=t.dataset.f;
+    [...$("#fulfil").children].forEach(b=>b.classList.toggle("on", b.dataset.f===fulfillment)); updateTotals(); }
+});
+$("#openCart").onclick=openCart; $("#closeCart").onclick=closeCart; $("#overlay").onclick=closeCart;
+$("#checkout").onclick=checkout; $("#closeModal").onclick=()=>$("#modalWrap").classList.remove("open");
+
+/* =========================================================================== START */
+(async function init(){
+  // Kategorie aus der URL lesen: shop.html?cat=tee  -> öffnet "Tee"
+  const wanted = new URLSearchParams(location.search).get("cat");
+  if(wanted && CATEGORIES.some(c=>c.id===wanted)) activeCat = wanted;
+  loadCart();
+  products = await getProducts();   // offline jetzt, Shopify später
+  renderCats(); renderGrid(); renderCart();
+})();
+</script>
+</body>
+</html>
